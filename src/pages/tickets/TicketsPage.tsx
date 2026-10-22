@@ -31,10 +31,10 @@ import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 
-// Seeded Technician fallback profile for ticket assignment
+// Technician profile for ticket assignment from database seed
 const SEEDED_TECH = {
-  id: 'usr-tech-01',
-  name: 'Marcus Vance',
+  id: '182f4407-8a52-4276-8426-1ca8c97c12bb',
+  name: 'Field Service Technician',
   role: 'Technician',
 };
 
@@ -543,7 +543,7 @@ export const TicketsPage: React.FC = () => {
                 onChange={(e) => setFormAssigneeId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
               >
-                <option value={SEEDED_TECH.id}>Marcus Vance (Certified Field Technician)</option>
+                <option value={SEEDED_TECH.id}>Field Service Technician (tech@famt.dev)</option>
                 <option value="">Leave unassigned (Open pool)</option>
               </select>
             </div>
