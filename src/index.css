@@ -358,3 +358,38 @@ html.light .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   RECHARTS OUTLINE & SELECTION RECTANGLE REMOVAL
+   ========================================================================== */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+.recharts-layer,
+.recharts-sector,
+.recharts-pie,
+.recharts-bar-rectangles,
+.recharts-bar-rectangle,
+.recharts-rectangle,
+.recharts-curve,
+.recharts-dot,
+.recharts-responsive-container,
+svg.recharts-surface,
+svg.recharts-surface * {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+  user-select: none !important;
+}
+
+/* Eliminate the background selection rectangle on bar charts */
+.recharts-tooltip-cursor,
+rect.recharts-tooltip-cursor {
+  display: none !important;
+  fill: transparent !important;
+  stroke: transparent !important;
+  opacity: 0 !important;
+}
+

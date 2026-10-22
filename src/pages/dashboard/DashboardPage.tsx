@@ -443,9 +443,9 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Donut with Interactive Central Metric */}
-              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center">
+              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center select-none">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart style={{ outline: 'none' }}>
                     <Pie
                       data={statusChartData}
                       innerRadius={65}
@@ -454,13 +454,14 @@ export const DashboardPage: React.FC = () => {
                       dataKey="value"
                       onMouseEnter={(_, index) => setHoveredStatusIndex(index)}
                       onMouseLeave={() => setHoveredStatusIndex(null)}
+                      style={{ outline: 'none' }}
                     >
                       {statusChartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={entry.color}
-                          stroke={isDark ? '#0f172a' : '#ffffff'}
-                          strokeWidth={hoveredStatusIndex === index ? 3 : 1}
+                          stroke="none"
+                          style={{ outline: 'none' }}
                           className="transition-all duration-200 cursor-pointer"
                         />
                       ))}
@@ -471,7 +472,7 @@ export const DashboardPage: React.FC = () => {
                           const data = payload[0].payload;
                           const pct = totalTickets > 0 ? Math.round((data.value / totalTickets) * 100) : 0;
                           return (
-                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs shadow-xl">
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs shadow-xl select-none pointer-events-none">
                               <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: data.color }} />
                                 {data.name}
@@ -506,20 +507,18 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Interactive Legend Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {statusChartData.map((item, idx) => {
                   const isHovered = hoveredStatusIndex === idx;
                   const pct = totalTickets > 0 ? Math.round((item.value / totalTickets) * 100) : 0;
                   return (
-                    <button
+                    <div
                       key={item.name}
-                      type="button"
                       onMouseEnter={() => setHoveredStatusIndex(idx)}
                       onMouseLeave={() => setHoveredStatusIndex(null)}
-                      onClick={() => setHoveredStatusIndex(hoveredStatusIndex === idx ? null : idx)}
                       className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all cursor-pointer border ${
                         isHovered
-                          ? 'bg-sky-50/80 dark:bg-slate-800/80 border-sky-300 dark:border-sky-500/50 shadow-sm'
+                          ? 'bg-sky-50/80 dark:bg-slate-800/80 border-sky-300 dark:border-sky-500/50 shadow-xs'
                           : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                     >
@@ -534,7 +533,7 @@ export const DashboardPage: React.FC = () => {
                         <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({pct}%)</span>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -564,9 +563,9 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="h-64 sm:h-72 w-full">
+              <div className="h-64 sm:h-72 w-full select-none">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={priorityChartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                  <BarChart data={priorityChartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }} style={{ outline: 'none' }}>
                     <defs>
                       <linearGradient id="lowPriorityGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9} />
@@ -606,13 +605,13 @@ export const DashboardPage: React.FC = () => {
                       axisLine={{ stroke: isDark ? '#334155' : '#cbd5e1' }}
                     />
                     <Tooltip
-                      cursor={{ fill: isDark ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.04)', radius: 8 }}
+                      cursor={false}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           const pct = totalTickets > 0 ? Math.round((data.count / totalTickets) * 100) : 0;
                           return (
-                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 px-3.5 py-2.5 rounded-xl text-xs shadow-xl min-w-[150px]">
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 px-3.5 py-2.5 rounded-xl text-xs shadow-xl min-w-[150px] select-none pointer-events-none">
                               <div className="flex items-center justify-between gap-3 mb-1">
                                 <span className="font-bold text-slate-900 dark:text-slate-100">{data.priority} Priority</span>
                                 <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{data.sla}</span>
@@ -629,9 +628,9 @@ export const DashboardPage: React.FC = () => {
                         return null;
                       }}
                     />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48} style={{ outline: 'none' }}>
                       {priorityChartData.map((entry, index) => (
-                        <Cell key={`bar-${index}`} fill={entry.fill} />
+                        <Cell key={`bar-${index}`} fill={entry.fill} stroke="none" style={{ outline: 'none' }} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -639,7 +638,7 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Quick SLA breakdown cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {priorityChartData.map((item) => {
                   const pct = totalTickets > 0 ? Math.round((item.count / totalTickets) * 100) : 0;
                   return (
@@ -680,9 +679,9 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center">
+              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center select-none">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart style={{ outline: 'none' }}>
                     <Pie
                       data={assetChartData}
                       innerRadius={65}
@@ -691,13 +690,14 @@ export const DashboardPage: React.FC = () => {
                       dataKey="value"
                       onMouseEnter={(_, index) => setHoveredAssetIndex(index)}
                       onMouseLeave={() => setHoveredAssetIndex(null)}
+                      style={{ outline: 'none' }}
                     >
                       {assetChartData.map((entry, index) => (
                         <Cell
                           key={`asset-cell-${index}`}
                           fill={entry.color}
-                          stroke={isDark ? '#0f172a' : '#ffffff'}
-                          strokeWidth={hoveredAssetIndex === index ? 3 : 1}
+                          stroke="none"
+                          style={{ outline: 'none' }}
                           className="transition-all duration-200 cursor-pointer"
                         />
                       ))}
@@ -708,7 +708,7 @@ export const DashboardPage: React.FC = () => {
                           const data = payload[0].payload;
                           const pct = totalAssets > 0 ? Math.round((data.value / totalAssets) * 100) : 0;
                           return (
-                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-xl text-xs shadow-xl">
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-xl text-xs shadow-xl select-none pointer-events-none">
                               <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: data.color }} />
                                 {data.name}
@@ -743,20 +743,18 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Legend */}
-              <div className="grid grid-cols-3 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="grid grid-cols-3 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {assetChartData.map((item, idx) => {
                   const isHovered = hoveredAssetIndex === idx;
                   const pct = totalAssets > 0 ? Math.round((item.value / totalAssets) * 100) : 0;
                   return (
-                    <button
+                    <div
                       key={item.name}
-                      type="button"
                       onMouseEnter={() => setHoveredAssetIndex(idx)}
                       onMouseLeave={() => setHoveredAssetIndex(null)}
-                      onClick={() => setHoveredAssetIndex(hoveredAssetIndex === idx ? null : idx)}
                       className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all cursor-pointer border ${
                         isHovered
-                          ? 'bg-emerald-50/80 dark:bg-slate-800/80 border-emerald-300 dark:border-emerald-500/50 shadow-sm'
+                          ? 'bg-emerald-50/80 dark:bg-slate-800/80 border-emerald-300 dark:border-emerald-500/50 shadow-xs'
                           : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                     >
@@ -771,7 +769,7 @@ export const DashboardPage: React.FC = () => {
                         <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({pct}%)</span>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
