@@ -185,6 +185,7 @@ export const SitesPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search plant by name or location (e.g. Baytown, Midland)..."
+            aria-label="Search plant by name or location"
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
@@ -255,15 +256,17 @@ export const SitesPage: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenEdit(site)}
-                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
                         title="Edit site"
+                        aria-label={`Edit ${site.name}`}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleOpenDelete(site)}
-                        className="p-1.5 text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
                         title="Delete site"
+                        aria-label={`Delete ${site.name}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -285,10 +288,14 @@ export const SitesPage: React.FC = () => {
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="create-site-name"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Site Name
             </label>
             <input
+              id="create-site-name"
               type="text"
               required
               value={formName}
@@ -299,10 +306,14 @@ export const SitesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="create-site-location"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Geographic Location
             </label>
             <input
+              id="create-site-location"
               type="text"
               required
               value={formLocation}
@@ -332,10 +343,14 @@ export const SitesPage: React.FC = () => {
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="edit-site-name"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Site Name
             </label>
             <input
+              id="edit-site-name"
               type="text"
               required
               value={formName}
@@ -345,10 +360,14 @@ export const SitesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="edit-site-location"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Geographic Location
             </label>
             <input
+              id="edit-site-location"
               type="text"
               required
               value={formLocation}

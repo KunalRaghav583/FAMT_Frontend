@@ -918,72 +918,178 @@ export const DashboardPage: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">All work orders are currently up to date.</p>
           </div>
         ) : (
-          <div className="famt-table-container">
-            <table className="w-full text-left text-sm min-w-[640px]">
-              <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className="py-3 px-5">Work Order Title</th>
-                  <th className="py-3 px-4">Asset / Site</th>
-                  <th className="py-3 px-4">Priority</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Due Date</th>
-                  <th className="py-3 px-5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
-                {ticketsToDisplay.map((ticket) => {
-                  const isOverdue =
-                    new Date(ticket.dueDate).getTime() < now &&
-                    ticket.status !== 'Resolved' &&
-                    ticket.status !== 'Closed';
+          <div>
+            {/* Desktop Table View (>= md screens) */}
+            <div className="hidden md:block famt-table-container">
+              <table className="w-full text-left text-sm min-w-[640px]">
+                <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="py-3 px-5">Work Order Title</th>
+                    <th className="py-3 px-4">Asset / Site</th>
+                    <th className="py-3 px-4">Priority</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Due Date</th>
+                    <th className="py-3 px-5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                  {ticketsToDisplay.map((ticket) => {
+                    const isOverdue =
+                      new Date(ticket.dueDate).getTime() < now &&
+                      ticket.status !== 'Resolved' &&
+                      ticket.status !== 'Closed';
 
-                  return (
-                    <tr
-                      key={ticket.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
-                      <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
-                        <div className="truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                    return (
+                      <tr
+                        key={ticket.id}
+                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                        onClick={() => navigate(`/tickets/${ticket.id}`)}
+                      >
+                        <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
+                          <div className="truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                            {ticket.title}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
+                            ID: {ticket.id.slice(0, 8)}...
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-xs">
+                          <div className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">
+                            {ticket.asset?.name || 'Unknown Asset'}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {ticket.asset?.site?.name || 'Unassigned Site'}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <TicketPriorityBadge priority={ticket.priority} size="sm" />
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <TicketStatusBadge status={ticket.status} size="sm" />
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
+                            <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
+                              {new Date(ticket.dueDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {isOverdue && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-bold mt-0.5">
+                              <AlertCircle className="w-3 h-3" /> Overdue
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                          {ticket.status === 'Open' && (user?.role === 'Admin' || ticket.assigneeId === user?.id) && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              isLoading={updatingTicketId === ticket.id}
+                              onClick={() => handleProgressStatus(ticket, 'In_progress')}
+                            >
+                              Start Work
+                            </Button>
+                          )}
+
+                          {ticket.status === 'In_progress' && (user?.role === 'Admin' || ticket.assigneeId === user?.id) && (
+                            <Button
+                              size="sm"
+                              variant="success"
+                              isLoading={updatingTicketId === ticket.id}
+                              onClick={() => handleProgressStatus(ticket, 'Resolved')}
+                            >
+                              Resolve
+                            </Button>
+                          )}
+
+                          {ticket.status === 'Resolved' && (user?.role === 'Admin' || ticket.assigneeId === user?.id) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              isLoading={updatingTicketId === ticket.id}
+                              onClick={() => handleProgressStatus(ticket, 'Closed')}
+                            >
+                              Close
+                            </Button>
+                          )}
+
+                          {ticket.status === 'Closed' && (
+                            <button
+                              onClick={() => navigate(`/tickets/${ticket.id}`)}
+                              className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                            >
+                              Details &rarr;
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View (< md screens, zero horizontal scroll required) */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+              {ticketsToDisplay.map((ticket) => {
+                const isOverdue =
+                  new Date(ticket.dueDate).getTime() < now &&
+                  ticket.status !== 'Resolved' &&
+                  ticket.status !== 'Closed';
+
+                return (
+                  <div
+                    key={ticket.id}
+                    className="p-4 space-y-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                           {ticket.title}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
+                        </h4>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                           ID: {ticket.id.slice(0, 8)}...
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-xs">
-                        <div className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">
-                          {ticket.asset?.name || 'Unknown Asset'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {ticket.asset?.site?.name || 'Unassigned Site'}
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4">
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <TicketPriorityBadge priority={ticket.priority} size="sm" />
-                      </td>
-
-                      <td className="py-3.5 px-4">
                         <TicketStatusBadge status={ticket.status} size="sm" />
-                      </td>
+                      </div>
+                    </div>
 
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
-                          <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
-                            {new Date(ticket.dueDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {isOverdue && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-bold mt-0.5">
-                            <AlertCircle className="w-3 h-3" /> Overdue
-                          </span>
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <div className="truncate max-w-[180px]">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {ticket.asset?.name || 'Unknown Asset'}
+                        </span>
+                        {ticket.asset?.site?.name && (
+                          <span className="text-slate-400 dark:text-slate-500"> &bull; {ticket.asset.site.name}</span>
                         )}
-                      </td>
+                      </div>
 
-                      <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
+                        <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}>
+                          {new Date(ticket.dueDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1" onClick={(e) => e.stopPropagation()}>
+                      {isOverdue ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-bold">
+                          <AlertCircle className="w-3 h-3" /> SLA Overdue
+                        </span>
+                      ) : <span />}
+
+                      <div className="flex items-center gap-2">
                         {ticket.status === 'Open' && (user?.role === 'Admin' || ticket.assigneeId === user?.id) && (
                           <Button
                             size="sm"
@@ -1025,12 +1131,12 @@ export const DashboardPage: React.FC = () => {
                             Details &rarr;
                           </button>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

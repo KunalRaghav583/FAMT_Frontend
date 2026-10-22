@@ -247,6 +247,7 @@ export const AssetsPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, serial no (e.g. PUMP-001)..."
+              aria-label="Search assets by name or serial number"
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
             />
           </div>
@@ -257,6 +258,7 @@ export const AssetsPage: React.FC = () => {
             <select
               value={selectedSiteId}
               onChange={(e) => setSelectedSiteId(e.target.value)}
+              aria-label="Filter assets by plant site"
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
             >
               <option value="">All Plant Sites</option>
@@ -274,6 +276,7 @@ export const AssetsPage: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as AssetStatus | '')}
+              aria-label="Filter assets by status"
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
             >
               <option value="">All Statuses</option>
@@ -285,7 +288,7 @@ export const AssetsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Assets Table */}
+      {/* Assets Table & Mobile Cards */}
       <div className="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
         {loading ? (
           <div className="p-12">
@@ -300,85 +303,165 @@ export const AssetsPage: React.FC = () => {
             onAction={isAdmin ? handleOpenCreate : undefined}
           />
         ) : (
-          <div className="famt-table-container">
-            <table className="w-full text-left text-sm min-w-[680px]">
-              <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className="py-3.5 px-5">Asset Name</th>
-                  <th className="py-3.5 px-4">Type</th>
-                  <th className="py-3.5 px-4">Serial No</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Plant Site</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
-                {assets.map((asset) => (
-                  <tr
-                    key={asset.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
-                    onClick={() => handleOpenDetails(asset)}
-                  >
-                    <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100">
-                      <div className="group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors font-bold">{asset.name}</div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                      {asset.type}
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800/90 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700/80 font-bold">
-                        {asset.serialNo}
-                      </span>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <AssetStatusBadge status={asset.status} size="sm" />
-                    </td>
-
-                    <td className="py-3.5 px-4 text-xs text-slate-700 dark:text-slate-300">
-                      <div className="font-medium text-slate-800 dark:text-slate-200">{asset.site?.name || 'Unassigned'}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{asset.site?.location}</div>
-                    </td>
-
-                    <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenDetails(asset)}
-                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                          title="View telemetry & tickets"
-                          aria-label={`View details of ${asset.name}`}
-                        >
-                          <Info className="w-4 h-4" />
-                        </button>
-
-                        {isAdmin && (
-                          <>
-                            <button
-                              onClick={() => handleOpenEdit(asset)}
-                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                              title="Edit asset"
-                              aria-label={`Edit ${asset.name}`}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenDelete(asset)}
-                              className="p-1.5 text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Delete asset"
-                              aria-label={`Delete ${asset.name}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+          <div>
+            {/* Desktop Table (>= md screens) */}
+            <div className="hidden md:block famt-table-container">
+              <table className="w-full text-left text-sm min-w-[680px]">
+                <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-5">Asset Name</th>
+                    <th className="py-3.5 px-4">Type</th>
+                    <th className="py-3.5 px-4">Serial No</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Plant Site</th>
+                    <th className="py-3.5 px-5 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                  {assets.map((asset) => (
+                    <tr
+                      key={asset.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                      onClick={() => handleOpenDetails(asset)}
+                    >
+                      <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100">
+                        <div className="group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors font-bold">{asset.name}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {asset.type}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800/90 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700/80 font-bold">
+                          {asset.serialNo}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <AssetStatusBadge status={asset.status} size="sm" />
+                      </td>
+
+                      <td className="py-3.5 px-4 text-xs text-slate-700 dark:text-slate-300">
+                        <div className="font-medium text-slate-800 dark:text-slate-200">{asset.site?.name || 'Unassigned'}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">{asset.site?.location}</div>
+                      </td>
+
+                      <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleOpenDetails(asset)}
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            title="View telemetry & tickets"
+                            aria-label={`View details of ${asset.name}`}
+                          >
+                            <Info className="w-4 h-4" />
+                          </button>
+
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEdit(asset)}
+                                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                                title="Edit asset"
+                                aria-label={`Edit ${asset.name}`}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleOpenDelete(asset)}
+                                className="p-1.5 text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Delete asset"
+                                aria-label={`Delete ${asset.name}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards List (< md screens) */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+              {assets.map((asset) => (
+                <div
+                  key={asset.id}
+                  className="p-4 space-y-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                  onClick={() => handleOpenDetails(asset)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {asset.name}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {asset.type}
+                      </p>
+                    </div>
+                    <AssetStatusBadge status={asset.status} size="sm" />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-0.5">
+                    <div className="flex items-center gap-1.5 truncate max-w-[170px]">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {asset.site?.name || 'Unassigned Site'}
+                      </span>
+                    </div>
+
+                    <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold">
+                      {asset.serialNo}
+                    </span>
+                  </div>
+
+                  <div
+                    className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                      {asset.site?.location || 'No location set'}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenDetails(asset)}
+                        leftIcon={<Info className="w-3.5 h-3.5 text-sky-500" />}
+                        className="text-xs py-1 px-2 min-h-[32px]"
+                      >
+                        Details
+                      </Button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEdit(asset)}
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                            title="Edit asset"
+                            aria-label={`Edit ${asset.name}`}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenDelete(asset)}
+                            className="p-1.5 text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                            title="Delete asset"
+                            aria-label={`Delete ${asset.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -423,10 +506,14 @@ export const AssetsPage: React.FC = () => {
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="create-asset-name"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Equipment Name
             </label>
             <input
+              id="create-asset-name"
               type="text"
               required
               value={formName}
@@ -438,10 +525,14 @@ export const AssetsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="create-asset-type"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Machinery Type
               </label>
               <select
+                id="create-asset-type"
                 value={formType}
                 onChange={(e) => setFormType(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
@@ -455,10 +546,14 @@ export const AssetsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="create-asset-serial"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Serial Number
               </label>
               <input
+                id="create-asset-serial"
                 type="text"
                 required
                 value={formSerialNo}
@@ -471,10 +566,14 @@ export const AssetsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="create-asset-status"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Initial Status
               </label>
               <select
+                id="create-asset-status"
                 value={formStatus}
                 onChange={(e) => setFormStatus(e.target.value as AssetStatus)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
@@ -486,10 +585,14 @@ export const AssetsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="create-asset-site"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Assigned Plant Site
               </label>
               <select
+                id="create-asset-site"
                 required
                 value={formSiteId}
                 onChange={(e) => setFormSiteId(e.target.value)}
@@ -533,10 +636,14 @@ export const AssetsPage: React.FC = () => {
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="edit-asset-name"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+            >
               Equipment Name
             </label>
             <input
+              id="edit-asset-name"
               type="text"
               required
               value={formName}
@@ -547,10 +654,14 @@ export const AssetsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="edit-asset-type"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Machinery Type
               </label>
               <select
+                id="edit-asset-type"
                 value={formType}
                 onChange={(e) => setFormType(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
@@ -564,10 +675,14 @@ export const AssetsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="edit-asset-serial"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Serial Number
               </label>
               <input
+                id="edit-asset-serial"
                 type="text"
                 required
                 value={formSerialNo}
@@ -579,10 +694,14 @@ export const AssetsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="edit-asset-status"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Status
               </label>
               <select
+                id="edit-asset-status"
                 value={formStatus}
                 onChange={(e) => setFormStatus(e.target.value as AssetStatus)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
@@ -594,10 +713,14 @@ export const AssetsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="edit-asset-site"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >
                 Assigned Plant Site
               </label>
               <select
+                id="edit-asset-site"
                 value={formSiteId}
                 onChange={(e) => setFormSiteId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
