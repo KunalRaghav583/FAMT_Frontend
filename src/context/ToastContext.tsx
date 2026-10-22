@@ -58,17 +58,17 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none px-4 sm:px-0">
         {toasts.map((toast) => {
           const bgColors = {
-            success: 'bg-emerald-950/90 border-emerald-500/50 text-emerald-100 shadow-emerald-900/30',
-            error: 'bg-rose-950/90 border-rose-500/50 text-rose-100 shadow-rose-900/30',
-            info: 'bg-sky-950/90 border-sky-500/50 text-sky-100 shadow-sky-900/30',
-            warning: 'bg-amber-950/90 border-amber-500/50 text-amber-100 shadow-amber-900/30',
+            success: 'bg-emerald-50/95 border-emerald-300 text-emerald-950 shadow-emerald-900/10 dark:bg-emerald-950/90 dark:border-emerald-500/50 dark:text-emerald-100 dark:shadow-emerald-900/30',
+            error: 'bg-rose-50/95 border-rose-300 text-rose-950 shadow-rose-900/10 dark:bg-rose-950/90 dark:border-rose-500/50 dark:text-rose-100 dark:shadow-rose-900/30',
+            info: 'bg-sky-50/95 border-sky-300 text-sky-950 shadow-sky-900/10 dark:bg-sky-950/90 dark:border-sky-500/50 dark:text-sky-100 dark:shadow-sky-900/30',
+            warning: 'bg-amber-50/95 border-amber-300 text-amber-950 shadow-amber-900/10 dark:bg-amber-950/90 dark:border-amber-500/50 dark:text-amber-100 dark:shadow-amber-900/30',
           };
 
           const icons = {
-            success: <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />,
-            error: <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />,
-            info: <Info className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />,
-            warning: <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />,
+            success: <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />,
+            error: <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />,
+            info: <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />,
+            warning: <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />,
           };
 
           return (
@@ -78,12 +78,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             >
               {icons[toast.type]}
               <div className="flex-1 text-sm">
-                {toast.title && <p className="font-semibold text-slate-100 mb-0.5">{toast.title}</p>}
-                <p className="text-slate-300 leading-relaxed text-xs sm:text-sm">{toast.message}</p>
+                {toast.title && <p className="font-semibold text-slate-900 dark:text-slate-100 mb-0.5">{toast.title}</p>}
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">{toast.message}</p>
               </div>
               <button
                 onClick={() => removeToast(toast.id)}
-                className="text-slate-400 hover:text-slate-200 transition-colors p-1 -mr-1 -mt-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-1 -mr-1 -mt-1 rounded-lg cursor-pointer"
                 aria-label="Close notification"
               >
                 <X className="w-4 h-4" />

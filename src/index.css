@@ -36,6 +36,12 @@
     flex-direction: column;
     width: 100%;
   }
+
+  /* Accessible focus indicators */
+  :focus-visible {
+    outline: 2px solid #0284c7;
+    outline-offset: 2px;
+  }
 }
 
 /* ==========================================================================
@@ -148,6 +154,13 @@
 
 .pulse-critical {
   animation: pulse-glow-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Responsive Table Wrapper */
+.famt-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ==========================================================================
@@ -329,6 +342,19 @@ html.light .text-slate-500 {
 }
 
 html.light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-html.light .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) {
+html.light .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
+html.light .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
   border-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   MOTION SAFETY
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
