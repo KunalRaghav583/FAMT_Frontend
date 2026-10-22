@@ -5,31 +5,31 @@ import { useToast } from './ToastContext';
 
 interface AuthContextType {
   user: User | null;
+  realUser: User | null;
   token: string | null;
   isLoading: boolean;
   isAdmin: boolean;
   isTechnician: boolean;
   isViewer: boolean;
+  isRealAdmin: boolean;
+  previewRole: Role | null;
+  setRolePreview: (role: Role | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role?: Role) => Promise<void>;
   logout: () => Promise<void>;
-  quickLoginAsRole: (role: Role) => Promise<void>;
 }
-
-const PRESEEDED_ACCOUNTS: Record<Role, { email: string; pass: string }> = {
-  Admin: { email: 'admin@famt.dev', pass: 'Password123!' },
-  Technician: { email: 'tech@famt.dev', pass: 'Password123!' },
-  Viewer: { email: 'viewer@famt.dev', pass: 'Password123!' },
-};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
+  const [realUser, setRealUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('famt_user');
     return saved ? JSON.parse(saved) : null;
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('famt_token'));
+  const [previewRole, setPreviewRole] = useState<Role | null>(() => {
+    return (sessionStorage.getItem('famt_role_preview') as Role) || null;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
 
@@ -45,15 +45,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const res = await authApi.me();
         if (mounted) {
-          setUser(res.user);
+          setRealUser(res.user);
           localStorage.setItem('famt_user', JSON.stringify(res.user));
         }
       } catch {
         if (mounted) {
           localStorage.removeItem('famt_token');
           localStorage.removeItem('famt_user');
-          setUser(null);
+          setRealUser(null);
           setToken(null);
+          setPreviewRole(null);
+          sessionStorage.removeItem('famt_role_preview');
         }
       } finally {
         if (mounted) setIsLoading(false);
@@ -63,8 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifySession();
 
     const handleAutoLogout = () => {
-      setUser(null);
+      setRealUser(null);
       setToken(null);
+      setPreviewRole(null);
+      sessionStorage.removeItem('famt_role_preview');
       toastInfo('Session expired. Please log in again.');
     };
 
@@ -83,7 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('famt_token', data.token);
         localStorage.setItem('famt_user', JSON.stringify(data.user));
         setToken(data.token);
-        setUser(data.user);
+        setRealUser(data.user);
+        setPreviewRole(null);
+        sessionStorage.removeItem('famt_role_preview');
         toastSuccess(`Welcome back, ${data.user.name}!`);
       } catch (err) {
         const msg = getErrorMessage(err);
@@ -102,7 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         await authApi.register(name, email, password, role);
         toastSuccess('Account created successfully! Logging you in...');
-        // Auto login after registration
         await login(email, password);
       } catch (err) {
         const msg = getErrorMessage(err);
@@ -125,39 +130,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       localStorage.removeItem('famt_token');
       localStorage.removeItem('famt_user');
-      setUser(null);
+      sessionStorage.removeItem('famt_role_preview');
+      setRealUser(null);
       setToken(null);
+      setPreviewRole(null);
       toastInfo('Logged out successfully');
     }
   }, [token, toastInfo]);
 
-  const quickLoginAsRole = useCallback(
-    async (role: Role) => {
-      const credentials = PRESEEDED_ACCOUNTS[role];
-      if (credentials) {
-        await login(credentials.email, credentials.pass);
+  // Pure role simulation for Admin:
+  // Admin stays 100% authenticated as Admin, but UI components render the simulated role
+  const isRealAdmin = realUser?.role === 'Admin';
+  const effectiveRole: Role | undefined = (isRealAdmin && previewRole) ? previewRole : realUser?.role;
+
+  const user: User | null = realUser
+    ? { ...realUser, role: effectiveRole || realUser.role }
+    : null;
+
+  const isAdmin = effectiveRole === 'Admin';
+  const isTechnician = effectiveRole === 'Technician';
+  const isViewer = effectiveRole === 'Viewer';
+
+  const setRolePreview = useCallback(
+    (role: Role | null) => {
+      if (!isRealAdmin) return;
+      if (!role || role === 'Admin') {
+        setPreviewRole(null);
+        sessionStorage.removeItem('famt_role_preview');
+        toastSuccess('Returned to full Admin view');
+      } else {
+        setPreviewRole(role);
+        sessionStorage.setItem('famt_role_preview', role);
+        toastInfo(`Viewing UI as ${role === 'Technician' ? 'Technician (Tech)' : role}. Your Admin session remains active.`);
       }
     },
-    [login]
+    [isRealAdmin, toastSuccess, toastInfo]
   );
-
-  const isAdmin = user?.role === 'Admin';
-  const isTechnician = user?.role === 'Technician';
-  const isViewer = user?.role === 'Viewer';
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        realUser,
         token,
         isLoading,
         isAdmin,
         isTechnician,
         isViewer,
+        isRealAdmin,
+        previewRole,
+        setRolePreview,
         login,
         register,
         logout,
-        quickLoginAsRole,
       }}
     >
       {children}

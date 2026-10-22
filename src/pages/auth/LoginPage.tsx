@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Zap, Lock, Mail, Shield, Wrench, Eye, ArrowRight } from 'lucide-react';
+import { Zap, Lock, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { ThemeToggle } from '../../components/common/ThemeToggle';
-import type { Role } from '../../types';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +11,7 @@ export const LoginPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { login, quickLoginAsRole } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,19 +31,6 @@ export const LoginPage: React.FC = () => {
       } else {
         setErrorMsg('Failed to connect to backend server');
       }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleQuickLogin = async (role: Role) => {
-    setErrorMsg(null);
-    setSubmitting(true);
-    try {
-      await quickLoginAsRole(role);
-      navigate(from, { replace: true });
-    } catch {
-      setErrorMsg(`Could not log in as ${role}`);
     } finally {
       setSubmitting(false);
     }
@@ -77,49 +63,8 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 1-Click Test Role Accounts Section */}
-        <div className="mt-8 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center mb-3">
-            Quick 1-Click Evaluation Credentials
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => handleQuickLogin('Admin')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100/80 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/50 text-purple-700 dark:text-purple-200 transition-all cursor-pointer group disabled:opacity-50"
-            >
-              <Shield className="w-4 h-4 text-purple-500 dark:text-purple-400 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">Admin</span>
-              <span className="text-[10px] text-purple-600 dark:text-purple-400/80">Full Access</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => handleQuickLogin('Technician')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-200 transition-all cursor-pointer group disabled:opacity-50"
-            >
-              <Wrench className="w-4 h-4 text-amber-500 dark:text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">Technician</span>
-              <span className="text-[10px] text-amber-600 dark:text-amber-400/80">Workflow</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => handleQuickLogin('Viewer')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-cyan-50 hover:bg-cyan-100/80 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/50 border border-cyan-200 dark:border-cyan-800/50 text-cyan-700 dark:text-cyan-200 transition-all cursor-pointer group disabled:opacity-50"
-            >
-              <Eye className="w-4 h-4 text-cyan-500 dark:text-cyan-400 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">Viewer</span>
-              <span className="text-[10px] text-cyan-600 dark:text-cyan-400/80">Read-Only</span>
-            </button>
-          </div>
-        </div>
-
         {/* Card Form */}
-        <div className="mt-5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl dark:shadow-2xl">
+        <div className="mt-8 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl dark:shadow-2xl">
           {errorMsg && (
             <div className="mb-5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-200 text-xs sm:text-sm font-medium">
               {errorMsg}
@@ -140,7 +85,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. admin@famt.dev"
+                  placeholder="name@company.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
                 />
               </div>

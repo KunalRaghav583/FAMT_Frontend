@@ -86,6 +86,11 @@ export const authApi = {
     const res = await apiClient.post<{ message: string }>('/auth/logout');
     return res.data;
   },
+
+  getTechnicians: async (): Promise<{ technicians: User[] }> => {
+    const res = await apiClient.get<{ technicians: User[] }>("/auth/technicians");
+    return res.data;
+  },
 };
 
 // 2. Sites API
