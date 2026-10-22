@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color-scheme: dark;
   }
 
   * {
@@ -13,12 +16,18 @@
   body {
     margin: 0;
     font-family: var(--font-sans);
-    background-color: #0b0f19;
+    background-color: #070b14;
     color: #f1f5f9;
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    background-image: 
+      radial-gradient(1200px 600px at 50% -10%, rgba(56, 189, 248, 0.08), transparent 70%),
+      radial-gradient(800px 400px at 90% 20%, rgba(99, 102, 241, 0.05), transparent 60%),
+      radial-gradient(1000px 500px at 10% 90%, rgba(14, 165, 233, 0.04), transparent 60%);
+    background-attachment: fixed;
   }
 
   #root {
@@ -29,46 +38,102 @@
   }
 }
 
-/* Custom scrollbar */
+/* ==========================================================================
+   ELEVATED SCROLLBAR (Dark Mode)
+   ========================================================================== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: #090e17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.6);
+  background: #1e293b;
   border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.8);
+  background: #0284c7;
 }
 
-/* Glassmorphism utility classes */
+/* ==========================================================================
+   OBSIDIAN PRECISION SURFACES (Dark Mode)
+   ========================================================================== */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(13, 20, 36, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.glass-panel-hover:hover {
-  background: rgba(24, 33, 53, 0.85);
-  border-color: rgba(56, 189, 248, 0.3);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px 1px rgba(56, 189, 248, 0.1);
+  box-shadow: 
+    0 1px 2px 0 rgba(0, 0, 0, 0.4),
+    0 12px 32px -4px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 1px 3px 0 rgba(0, 0, 0, 0.3),
+    0 8px 24px -2px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 20px 40px -8px rgba(0, 0, 0, 0.65),
+    0 0 16px -2px rgba(56, 189, 248, 0.12),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+}
+
+.glass-input {
+  background: rgba(11, 18, 33, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-input:focus {
+  background: rgba(14, 23, 42, 0.95);
+  border-color: #38bdf8;
+  box-shadow: 
+    0 0 0 3px rgba(56, 189, 248, 0.18),
+    inset 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+
+.glass-input::placeholder {
+  color: #64748b;
+}
+
+/* Subtle Architectural Grid */
+.cyber-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+}
+
+/* Tactile Micro-Interactions */
+.tap-highlight {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tap-highlight:active {
+  transform: scale(0.98);
 }
 
 /* Pulse animation for critical tickets */
@@ -83,4 +148,187 @@
 
 .pulse-critical {
   animation: pulse-glow-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* ==========================================================================
+   LUMINOUS MIRROR LIGHT THEME (Executive Pearl Glass / Apple Pro Grade)
+   ========================================================================== */
+
+html.light, [data-theme="light"] {
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  background-image: 
+    radial-gradient(1200px 600px at 50% -10%, rgba(56, 189, 248, 0.12), transparent 70%),
+    radial-gradient(800px 400px at 95% 15%, rgba(99, 102, 241, 0.06), transparent 60%),
+    radial-gradient(1000px 500px at 5% 85%, rgba(14, 165, 233, 0.05), transparent 60%);
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+/* Mirror Glass Surfaces in Light Mode */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 
+    0 1px 3px 0 rgba(15, 23, 42, 0.03),
+    0 16px 36px -8px rgba(15, 23, 42, 0.06),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+}
+
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 
+    0 1px 3px 0 rgba(15, 23, 42, 0.04),
+    0 8px 24px -4px rgba(15, 23, 42, 0.05),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+}
+
+html.light .glass-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.45);
+  box-shadow: 
+    0 4px 6px -1px rgba(15, 23, 42, 0.04),
+    0 20px 35px -8px rgba(15, 23, 42, 0.08),
+    0 0 15px -3px rgba(14, 165, 233, 0.12),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 1);
+}
+
+/* CRITICAL: NO BLACK INPUTS IN LIGHT MODE */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea,
+html.light .glass-input {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus,
+html.light .glass-input:focus {
+  background-color: #ffffff !important;
+  border-color: #0284c7 !important;
+  color: #0f172a !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18), 0 0 12px -2px rgba(14, 165, 233, 0.2) !important;
+  outline: none;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder,
+html.light .glass-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Light Theme Header & Navigation */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 8px 20px -4px rgba(15, 23, 42, 0.04);
+}
+
+html.light footer {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+/* Light Theme Grid Pattern */
+html.light .cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+}
+
+/* ==========================================================================
+   LIGHT MODE HARMONIOUS FALLBACKS (Guarantees no dark clashes)
+   ========================================================================== */
+html.light .bg-slate-900,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/30 {
+  background-color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(226, 232, 240, 0.9);
+}
+
+html.light .bg-slate-950,
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/50 {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+html.light .bg-slate-800,
+html.light .bg-slate-800\/90,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/40 {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/50,
+html.light .border-slate-800\/40,
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+html.light .border-slate-700\/60,
+html.light .border-slate-700\/50 {
+  border-color: #e2e8f0;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a;
+}
+
+html.light .text-slate-300 {
+  color: #334155;
+}
+
+html.light .text-slate-400 {
+  color: #64748b;
+}
+
+html.light .text-slate-500 {
+  color: #64748b;
+}
+
+html.light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html.light .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0;
 }

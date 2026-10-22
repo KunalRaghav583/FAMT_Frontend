@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
@@ -16,10 +17,11 @@ import { TicketDetailPage } from './pages/tickets/TicketDetailPage';
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <Routes>
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -46,6 +48,7 @@ export const App: React.FC = () => {
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
+  </ThemeProvider>
   );
 };
 

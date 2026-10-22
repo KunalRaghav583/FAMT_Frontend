@@ -5,17 +5,17 @@ import { Shield, Wrench, Eye, CheckCircle2, Clock, Check, XCircle } from 'lucide
 export const RoleBadge: React.FC<{ role: Role; size?: 'sm' | 'md' }> = ({ role, size = 'md' }) => {
   const configs = {
     Admin: {
-      bg: 'bg-purple-500/10 text-purple-400 border-purple-500/30 ring-purple-500/20',
+      bg: 'bg-purple-50 text-purple-700 border-purple-200/90 ring-purple-500/20 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/30',
       icon: <Shield className={size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />,
       label: 'Admin',
     },
     Technician: {
-      bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30 ring-amber-500/20',
+      bg: 'bg-amber-50 text-amber-700 border-amber-200/90 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30',
       icon: <Wrench className={size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />,
       label: 'Technician',
     },
     Viewer: {
-      bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 ring-cyan-500/20',
+      bg: 'bg-cyan-50 text-cyan-700 border-cyan-200/90 ring-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30',
       icon: <Eye className={size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />,
       label: 'Viewer',
     },
@@ -35,29 +35,24 @@ export const RoleBadge: React.FC<{ role: Role; size?: 'sm' | 'md' }> = ({ role, 
 };
 
 export const TicketStatusBadge: React.FC<{ status: TicketStatus; size?: 'sm' | 'md' }> = ({ status, size = 'md' }) => {
-  // Spec:
-  // Open: Blue
-  // In_progress: Yellow / Amber
-  // Resolved: Emerald / Green
-  // Closed: Slate / Gray
   const configs = {
     Open: {
-      bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+      bg: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
       icon: <Clock className="w-3.5 h-3.5" />,
       label: 'Open',
     },
     In_progress: {
-      bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      bg: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
       icon: <Clock className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />,
       label: 'In Progress',
     },
     Resolved: {
-      bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
       icon: <Check className="w-3.5 h-3.5" />,
       label: 'Resolved',
     },
     Closed: {
-      bg: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
+      bg: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/15 dark:text-slate-400 dark:border-slate-500/30',
       icon: <CheckCircle2 className="w-3.5 h-3.5" />,
       label: 'Closed',
     },
@@ -80,19 +75,19 @@ export const TicketPriorityBadge: React.FC<{ priority: TicketPriority; size?: 's
 }) => {
   const configs = {
     Low: {
-      bg: 'bg-slate-800 text-slate-300 border-slate-700',
+      bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
       dot: 'bg-slate-400',
     },
     Medium: {
-      bg: 'bg-sky-950/80 text-sky-400 border-sky-800/60',
-      dot: 'bg-sky-400',
+      bg: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/80 dark:text-sky-400 dark:border-sky-800/60',
+      dot: 'bg-sky-500 dark:bg-sky-400',
     },
     High: {
-      bg: 'bg-amber-950/80 text-amber-400 border-amber-800/60',
-      dot: 'bg-amber-400',
+      bg: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/80 dark:text-amber-400 dark:border-amber-800/60',
+      dot: 'bg-amber-500 dark:bg-amber-400',
     },
     Critical: {
-      bg: 'bg-rose-950/90 text-rose-300 border-rose-700 pulse-critical',
+      bg: 'bg-rose-50 text-rose-700 border-rose-200 pulse-critical dark:bg-rose-950/90 dark:text-rose-300 dark:border-rose-700',
       dot: 'bg-rose-500 animate-ping',
     },
   };
@@ -111,17 +106,17 @@ export const TicketPriorityBadge: React.FC<{ priority: TicketPriority; size?: 's
 export const AssetStatusBadge: React.FC<{ status: AssetStatus; size?: 'sm' | 'md' }> = ({ status, size = 'md' }) => {
   const configs = {
     Active: {
-      bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
       icon: <CheckCircle2 className="w-3.5 h-3.5" />,
       label: 'Active',
     },
     Under_maintenance: {
-      bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      bg: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
       icon: <Wrench className="w-3.5 h-3.5" />,
       label: 'Under Maintenance',
     },
     Retired: {
-      bg: 'bg-slate-700/40 text-slate-400 border-slate-700',
+      bg: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/40 dark:text-slate-400 dark:border-slate-700',
       icon: <XCircle className="w-3.5 h-3.5" />,
       label: 'Retired',
     },

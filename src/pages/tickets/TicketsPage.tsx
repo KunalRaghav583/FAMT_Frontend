@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  Wrench,
 } from 'lucide-react';
 import { ticketsApi, assetsApi, getErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -113,6 +114,18 @@ export const TicketsPage: React.FC = () => {
     fetchTickets(1);
   }, [fetchTickets]);
 
+  const handleOpenCreate = useCallback(() => {
+    setFormTitle('');
+    setFormDescription('');
+    setFormPriority('Medium');
+    // Default due date: 7 days from now
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    setFormDueDate(nextWeek.toISOString().slice(0, 16));
+    setFormAssetId(assets[0]?.id || '');
+    setFormAssigneeId(SEEDED_TECH.id);
+    setIsCreateOpen(true);
+  }, [assets]);
+
   // Handle URL query changes (e.g. from dashboard links)
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
@@ -124,19 +137,7 @@ export const TicketsPage: React.FC = () => {
     if (searchParams.get('assigneeId') === user?.id) {
       setOnlyMyTickets(true);
     }
-  }, [searchParams, user?.id, setSearchParams]);
-
-  const handleOpenCreate = () => {
-    setFormTitle('');
-    setFormDescription('');
-    setFormPriority('Medium');
-    // Default due date: 7 days from now
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    setFormDueDate(nextWeek.toISOString().slice(0, 16));
-    setFormAssetId(assets[0]?.id || '');
-    setFormAssigneeId(SEEDED_TECH.id);
-    setIsCreateOpen(true);
-  };
+  }, [searchParams, user?.id, setSearchParams, handleOpenCreate]);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,10 +345,11 @@ export const TicketsPage: React.FC = () => {
                       </td>
 
                       <td className="py-4 px-4 text-xs">
-                        <div className="font-semibold text-slate-200 truncate max-w-[170px]">
-                          {ticket.asset?.name || 'Unknown Asset'}
+                        <div className="font-semibold text-slate-200 truncate max-w-[170px] flex items-center gap-1.5">
+                          <Wrench className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{ticket.asset?.name || 'Unknown Asset'}</span>
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono">
+                        <div className="text-[11px] text-slate-400 font-mono pl-5">
                           {ticket.asset?.serialNo}
                         </div>
                       </td>
