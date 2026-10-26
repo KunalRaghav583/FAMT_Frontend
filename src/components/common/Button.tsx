@@ -24,9 +24,9 @@ export const Button: React.FC<ButtonProps> = ({
     'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] select-none';
 
   const sizeClasses = {
-    sm: 'text-xs px-3 py-1.5 min-h-[34px] gap-1.5',
-    md: 'text-sm px-4 py-2 min-h-[40px] gap-2',
-    lg: 'text-base px-6 py-2.5 min-h-[46px] gap-2.5',
+    sm: 'text-xs px-2.5 py-1.5 min-h-[32px] gap-1.5',
+    md: 'text-xs sm:text-sm px-3.5 py-2 min-h-[38px] gap-2',
+    lg: 'text-sm sm:text-base px-5 py-2.5 min-h-[44px] gap-2.5',
   };
 
   const variantClasses = {

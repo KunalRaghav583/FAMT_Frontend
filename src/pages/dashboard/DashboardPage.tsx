@@ -47,43 +47,66 @@ export const DashboardPage: React.FC = () => {
   const [assignedTickets, setAssignedTickets] = useState<Ticket[]>([]);
   const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date());
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const [activeChartTab, setActiveChartTab] = useState<'tickets' | 'fleet'>('tickets');
   const [hoveredStatusIndex, setHoveredStatusIndex] = useState<number | null>(null);
   const [hoveredAssetIndex, setHoveredAssetIndex] = useState<number | null>(null);
 
   const userId = user?.id;
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const summaryRes = await dashboardApi.getSummary();
-      setSummary(summaryRes.summary);
+  const fetchDashboardData = useCallback(
+    async (isManual = false) => {
+      try {
+        if (isManual) {
+          setIsRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      // If user is logged in, fetch their assigned tickets
-      if (userId) {
-        const assignedRes = await ticketsApi.getAll({
-          assigneeId: userId,
+        const summaryRes = await dashboardApi.getSummary();
+        setSummary(summaryRes.summary);
+
+        // If user is logged in, fetch their assigned tickets
+        if (userId) {
+          const assignedRes = await ticketsApi.getAll({
+            assigneeId: userId,
+            limit: 6,
+          });
+          setAssignedTickets(assignedRes.tickets);
+        }
+
+        // Also fetch recent active tickets for overview
+        const recentRes = await ticketsApi.getAll({
           limit: 6,
         });
-        setAssignedTickets(assignedRes.tickets);
-      }
+        setRecentTickets(recentRes.tickets);
 
-      // Also fetch recent active tickets for overview
-      const recentRes = await ticketsApi.getAll({
-        limit: 6,
-      });
-      setRecentTickets(recentRes.tickets);
-    } catch (err) {
-      toastError(getErrorMessage(err), 'Failed to load dashboard metrics');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, toastError]);
+        const currentTimestamp = new Date();
+        setLastRefreshedAt(currentTimestamp);
+        setNow(currentTimestamp.getTime());
+
+        if (isManual) {
+          toastSuccess('Dashboard metrics and telemetry updated successfully', 'Refreshed');
+        }
+      } catch (err) {
+        toastError(getErrorMessage(err), 'Failed to load dashboard metrics');
+      } finally {
+        setLoading(false);
+        if (isManual) {
+          setTimeout(() => {
+            setIsRefreshing(false);
+          }, 400);
+        }
+      }
+    },
+    [userId, toastError, toastSuccess]
+  );
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(false);
   }, [fetchDashboardData]);
 
   // Handle rapid status progression from dashboard
@@ -250,126 +273,141 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          <Button
-            variant="primary"
-            onClick={() => navigate('/tickets?new=true')}
-            leftIcon={<Plus className="w-4 h-4" />}
-            size="sm"
-            className="sm:text-sm"
-          >
-            Raise Ticket
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={fetchDashboardData}
-            title="Refresh metrics"
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-            size="sm"
-            className="sm:text-sm"
-          >
-            Refresh
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 shrink-0">
+          {/* Live Telemetry Timestamp Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 px-2.5 py-1.5 rounded-lg shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Telemetry &bull; Updated {lastRefreshedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => fetchDashboardData(true)}
+              disabled={isRefreshing}
+              title={`Refresh metrics (Last updated: ${lastRefreshedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`}
+              leftIcon={
+                <RefreshCw
+                  className={`w-3.5 h-3.5 transition-transform duration-500 ${
+                    isRefreshing ? 'animate-spin text-sky-600 dark:text-sky-400' : 'group-hover:rotate-180'
+                  }`}
+                />
+              }
+              size="sm"
+              className="sm:text-sm group"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => navigate('/tickets?new=true')}
+              leftIcon={<Plus className="w-4 h-4" />}
+              size="sm"
+              className="sm:text-sm"
+            >
+              Raise Ticket
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* 5 Key Metric Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
         {/* 1. Open Tickets */}
-        <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group hover:border-sky-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl relative overflow-hidden group hover:border-sky-400/50 transition-all flex flex-col justify-between h-full min-h-[115px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Open Tickets
             </span>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400 tracking-tight">
+          <div className="my-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400 tracking-tight leading-none">
               {summary?.openTickets ?? 0}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">active queue</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">active queue</span>
           </div>
-          <div className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">Awaiting technician pickup</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Awaiting technician pickup</div>
         </div>
 
-        {/* 2. Overdue Tickets (Highlighted in vibrant Alert Red per spec) */}
-        <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group border-rose-300 dark:border-rose-500/40 bg-gradient-to-br from-rose-50/60 via-white to-white dark:from-rose-950/40 dark:via-slate-900 dark:to-slate-900 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+        {/* 2. Overdue Tickets */}
+        <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl relative overflow-hidden group border-rose-300 dark:border-rose-500/40 bg-gradient-to-br from-rose-50/60 via-white to-white dark:from-rose-950/40 dark:via-slate-900 dark:to-slate-900 shadow-xs flex flex-col justify-between h-full min-h-[115px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
               Overdue SLA
             </span>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-100 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-500/40 flex items-center justify-center text-rose-600 dark:text-rose-400 animate-pulse">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-500/40 flex items-center justify-center text-rose-600 dark:text-rose-400 animate-pulse shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight">
+          <div className="my-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight leading-none">
               {summary?.overdueTickets ?? 0}
             </span>
             <span className="text-xs text-rose-700 dark:text-rose-300/80 font-bold">past due</span>
           </div>
-          <div className="mt-1.5 text-[11px] text-rose-600/90 dark:text-rose-300/70">Urgent field intervention required</div>
+          <div className="text-[11px] text-rose-600/90 dark:text-rose-300/70 truncate">Urgent field intervention required</div>
         </div>
 
         {/* 3. Assets Under Maintenance */}
-        <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group hover:border-amber-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl relative overflow-hidden group hover:border-amber-400/50 transition-all flex flex-col justify-between h-full min-h-[115px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               In Maintenance
             </span>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
-              <Wrench className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+              <Wrench className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight">
+          <div className="my-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight leading-none">
               {summary?.assetsUnderMaintenance ?? 0}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">offline units</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">offline units</span>
           </div>
-          <div className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">Undergoing repair or service</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Undergoing repair or service</div>
         </div>
 
         {/* 4. Total Assets */}
-        <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl relative overflow-hidden group hover:border-emerald-400/50 transition-all flex flex-col justify-between h-full min-h-[115px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Total Assets
             </span>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Cpu className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+          <div className="my-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none">
               {summary?.totalAssets ?? 0}
             </span>
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
               {summary?.assetsByStatus?.Active ?? 0} active
             </span>
           </div>
-          <div className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">Across monitored plant sites</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Across monitored plant sites</div>
         </div>
 
         {/* 5. Total Work Orders */}
-        <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Work Orders
+        <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl relative overflow-hidden group hover:border-indigo-400/50 transition-all flex flex-col justify-between h-full min-h-[115px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Total Orders
             </span>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <TicketIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+              <TicketIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+          <div className="my-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none">
               {summary?.totalTickets ?? 0}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">recorded</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">recorded</span>
           </div>
-          <div className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {summary?.ticketsByStatus?.Resolved ?? 0} resolved successfully
           </div>
         </div>
@@ -425,10 +463,10 @@ export const DashboardPage: React.FC = () => {
 
         {/* TAB 1: WORK ORDER ANALYTICS */}
         {activeChartTab === 'tickets' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 animate-in fade-in duration-200">
             {/* Chart 1: Tickets by Status */}
-            <div className="lg:col-span-6 glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
+            <div className="lg:col-span-6 glass-card p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-1.5">
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                     Ticket Lifecycle Distribution
@@ -443,14 +481,14 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Donut with Interactive Central Metric */}
-              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center select-none">
+              <div className="relative h-52 sm:h-56 lg:h-60 w-full flex items-center justify-center select-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart style={{ outline: 'none' }}>
                     <Pie
                       data={statusChartData}
-                      innerRadius={65}
-                      outerRadius={92}
-                      paddingAngle={4}
+                      innerRadius={54}
+                      outerRadius={78}
+                      paddingAngle={3}
                       dataKey="value"
                       onMouseEnter={(_, index) => setHoveredStatusIndex(index)}
                       onMouseLeave={() => setHoveredStatusIndex(null)}
@@ -492,10 +530,10 @@ export const DashboardPage: React.FC = () => {
 
                 {/* Central Telemetry Metric */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-                  <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 transition-all duration-200">
+                  <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 transition-all duration-200 leading-none">
                     {hoveredStatusData ? hoveredStatusData.value : totalTickets}
                   </span>
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
                     {hoveredStatusData ? hoveredStatusData.name : 'Total Orders'}
                   </span>
                   <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/20">
@@ -507,7 +545,7 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Interactive Legend Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {statusChartData.map((item, idx) => {
                   const isHovered = hoveredStatusIndex === idx;
                   const pct = totalTickets > 0 ? Math.round((item.value / totalTickets) * 100) : 0;
@@ -516,21 +554,21 @@ export const DashboardPage: React.FC = () => {
                       key={item.name}
                       onMouseEnter={() => setHoveredStatusIndex(idx)}
                       onMouseLeave={() => setHoveredStatusIndex(null)}
-                      className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all cursor-pointer border ${
+                      className={`flex flex-col items-center text-center p-2 rounded-lg sm:rounded-xl transition-all cursor-pointer border ${
                         isHovered
                           ? 'bg-sky-50/80 dark:bg-slate-800/80 border-sky-300 dark:border-sky-500/50 shadow-xs'
                           : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <div className="flex items-center gap-1.5 mb-0.5">
                         <span
-                          className="w-2.5 h-2.5 rounded-full transition-transform"
+                          className="w-2 h-2 rounded-full transition-transform"
                           style={{ backgroundColor: item.color, transform: isHovered ? 'scale(1.25)' : 'scale(1)' }}
                         />
                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[85px]">{item.name}</span>
                       </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({pct}%)</span>
                       </div>
                     </div>
@@ -540,8 +578,8 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* Chart 2: Tickets by Priority */}
-            <div className="lg:col-span-6 glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
+            <div className="lg:col-span-6 glass-card p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-1.5">
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
@@ -558,14 +596,14 @@ export const DashboardPage: React.FC = () => {
                     Tickets distributed across priority tiers & SLA requirements
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <TrendingUp className="w-4 h-4" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
 
-              <div className="h-64 sm:h-72 w-full select-none">
+              <div className="h-52 sm:h-56 lg:h-60 w-full select-none">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={priorityChartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }} style={{ outline: 'none' }}>
+                  <BarChart data={priorityChartData} margin={{ top: 12, right: 10, left: -6, bottom: 0 }} style={{ outline: 'none' }}>
                     <defs>
                       <linearGradient id="lowPriorityGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9} />
@@ -592,14 +630,15 @@ export const DashboardPage: React.FC = () => {
                     <XAxis
                       dataKey="priority"
                       stroke={isDark ? '#94a3b8' : '#64748b'}
-                      fontSize={12}
+                      fontSize={11}
                       fontWeight={600}
                       tickLine={false}
                       axisLine={{ stroke: isDark ? '#334155' : '#cbd5e1' }}
                     />
                     <YAxis
+                      width={26}
                       stroke={isDark ? '#94a3b8' : '#64748b'}
-                      fontSize={12}
+                      fontSize={11}
                       allowDecimals={false}
                       tickLine={false}
                       axisLine={{ stroke: isDark ? '#334155' : '#cbd5e1' }}
@@ -611,13 +650,13 @@ export const DashboardPage: React.FC = () => {
                           const data = payload[0].payload;
                           const pct = totalTickets > 0 ? Math.round((data.count / totalTickets) * 100) : 0;
                           return (
-                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 px-3.5 py-2.5 rounded-xl text-xs shadow-xl min-w-[150px] select-none pointer-events-none">
-                              <div className="flex items-center justify-between gap-3 mb-1">
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 px-3 py-2 rounded-xl text-xs shadow-xl min-w-[140px] select-none pointer-events-none">
+                              <div className="flex items-center justify-between gap-3 mb-0.5">
                                 <span className="font-bold text-slate-900 dark:text-slate-100">{data.priority} Priority</span>
                                 <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{data.sla}</span>
                               </div>
                               <div className="flex items-baseline justify-between gap-3">
-                                <span className="text-base font-extrabold" style={{ color: data.solidColor }}>{data.count} orders</span>
+                                <span className="text-sm font-extrabold" style={{ color: data.solidColor }}>{data.count} orders</span>
                                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
                                   {pct}% workload
                                 </span>
@@ -628,7 +667,7 @@ export const DashboardPage: React.FC = () => {
                         return null;
                       }}
                     />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48} style={{ outline: 'none' }}>
+                    <Bar dataKey="count" radius={[5, 5, 0, 0]} maxBarSize={32} style={{ outline: 'none' }}>
                       {priorityChartData.map((entry, index) => (
                         <Cell key={`bar-${index}`} fill={entry.fill} stroke="none" style={{ outline: 'none' }} />
                       ))}
@@ -638,17 +677,17 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Quick SLA breakdown cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {priorityChartData.map((item) => {
                   const pct = totalTickets > 0 ? Math.round((item.count / totalTickets) * 100) : 0;
                   return (
-                    <div key={item.priority} className="flex flex-col items-center text-center p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.solidColor }} />
+                    <div key={item.priority} className="flex flex-col items-center text-center p-2 rounded-lg sm:rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.solidColor }} />
                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{item.priority}</span>
                       </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">{item.count}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{item.count}</span>
                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({pct}%)</span>
                       </div>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{item.sla}</span>
@@ -662,10 +701,10 @@ export const DashboardPage: React.FC = () => {
 
         {/* TAB 2: FLEET RELIABILITY & UPTIME */}
         {activeChartTab === 'fleet' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 animate-in fade-in duration-200">
             {/* Fleet Chart: Asset Status Donut */}
-            <div className="lg:col-span-6 glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
+            <div className="lg:col-span-6 glass-card p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-1.5">
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                     Plant Machinery Availability
@@ -679,14 +718,14 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="relative h-64 sm:h-72 w-full flex items-center justify-center select-none">
+              <div className="relative h-52 sm:h-56 lg:h-60 w-full flex items-center justify-center select-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart style={{ outline: 'none' }}>
                     <Pie
                       data={assetChartData}
-                      innerRadius={65}
-                      outerRadius={92}
-                      paddingAngle={4}
+                      innerRadius={54}
+                      outerRadius={78}
+                      paddingAngle={3}
                       dataKey="value"
                       onMouseEnter={(_, index) => setHoveredAssetIndex(index)}
                       onMouseLeave={() => setHoveredAssetIndex(null)}
@@ -708,7 +747,7 @@ export const DashboardPage: React.FC = () => {
                           const data = payload[0].payload;
                           const pct = totalAssets > 0 ? Math.round((data.value / totalAssets) * 100) : 0;
                           return (
-                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-xl text-xs shadow-xl select-none pointer-events-none">
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs shadow-xl select-none pointer-events-none">
                               <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: data.color }} />
                                 {data.name}
@@ -728,10 +767,10 @@ export const DashboardPage: React.FC = () => {
 
                 {/* Central Telemetry Metric */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-                  <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 transition-all duration-200">
+                  <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 transition-all duration-200 leading-none">
                     {hoveredAssetData ? hoveredAssetData.value : `${uptimeRate}%`}
                   </span>
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
                     {hoveredAssetData ? hoveredAssetData.name : 'Fleet Uptime'}
                   </span>
                   <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/20">
@@ -743,7 +782,7 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Legend */}
-              <div className="grid grid-cols-3 gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 select-none">
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 select-none">
                 {assetChartData.map((item, idx) => {
                   const isHovered = hoveredAssetIndex === idx;
                   const pct = totalAssets > 0 ? Math.round((item.value / totalAssets) * 100) : 0;
@@ -752,21 +791,21 @@ export const DashboardPage: React.FC = () => {
                       key={item.name}
                       onMouseEnter={() => setHoveredAssetIndex(idx)}
                       onMouseLeave={() => setHoveredAssetIndex(null)}
-                      className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all cursor-pointer border ${
+                      className={`flex flex-col items-center text-center p-2 rounded-lg sm:rounded-xl transition-all cursor-pointer border ${
                         isHovered
                           ? 'bg-emerald-50/80 dark:bg-slate-800/80 border-emerald-300 dark:border-emerald-500/50 shadow-xs'
                           : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <div className="flex items-center gap-1.5 mb-0.5">
                         <span
-                          className="w-2.5 h-2.5 rounded-full transition-transform"
+                          className="w-2 h-2 rounded-full transition-transform"
                           style={{ backgroundColor: item.color, transform: isHovered ? 'scale(1.25)' : 'scale(1)' }}
                         />
                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[100px]">{item.name}</span>
                       </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{item.value}</span>
                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({pct}%)</span>
                       </div>
                     </div>
@@ -776,9 +815,9 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* Fleet Reliability Health Rail */}
-            <div className="lg:col-span-6 glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+            <div className="lg:col-span-6 glass-card p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                       Reliability & Service Health Index
@@ -787,18 +826,18 @@ export const DashboardPage: React.FC = () => {
                       Operational capacity ratio and maintenance backlog impact
                     </p>
                   </div>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
 
                 {/* Segmented Visual Availability Bar */}
-                <div className="mt-4 p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80">
-                  <div className="flex items-center justify-between text-xs mb-2">
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="font-bold text-slate-800 dark:text-slate-200">Overall Fleet Composition</span>
                     <span className="font-extrabold text-emerald-700 dark:text-emerald-400">{uptimeRate}% Available</span>
                   </div>
-                  <div className="w-full h-3.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                  <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden flex">
                     <div
                       style={{ width: `${totalAssets > 0 ? (activeAssets / totalAssets) * 100 : 0}%` }}
                       className="bg-emerald-500 h-full transition-all duration-500"
@@ -815,7 +854,7 @@ export const DashboardPage: React.FC = () => {
                       title={`Retired: ${retiredAssets}`}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       Active ({totalAssets > 0 ? Math.round((activeAssets / totalAssets) * 100) : 0}%)
@@ -832,33 +871,33 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* 2 Strategic Breakdown Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                  <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800/60">
-                    <div className="flex items-center justify-between mb-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+                  <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800/60">
+                    <div className="flex items-center justify-between mb-0.5">
                       <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Offline Impact</span>
                       <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">
                         {totalAssets > 0 ? ((maintenanceAssets / totalAssets) * 100).toFixed(1) : 0}%
                       </span>
                     </div>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                      {maintenanceAssets} {maintenanceAssets === 1 ? 'Unit' : 'Units'} Undergoing Work
+                    <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                      {maintenanceAssets} {maintenanceAssets === 1 ? 'Unit' : 'Units'} Under Work
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                       Turbines, compressors, or pumps pulled for maintenance.
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800/60">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Resolution SLA Ratio</span>
+                  <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800/60">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Resolution SLA</span>
                       <span className="text-xs font-extrabold text-sky-600 dark:text-sky-400">
                         {resolutionRate}%
                       </span>
                     </div>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                    <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
                       {resolvedTickets} Closed Successfully
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                       Maintenance orders verified without repeat failures.
                     </p>
                   </div>
@@ -866,9 +905,9 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Footer Navigation */}
-              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Access complete registry with serial numbers and plant sites:
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                  Access complete fleet registry:
                 </span>
                 <Link
                   to="/assets"
@@ -885,7 +924,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* Assigned / Recent Work Orders Table */}
       <div className="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -907,12 +946,12 @@ export const DashboardPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-500 transition-colors"
           >
             <span>View All in Tickets Hub</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {ticketsToDisplay.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 dark:text-slate-400">
+          <div className="p-8 sm:p-10 text-center text-slate-500 dark:text-slate-400">
             <TicketIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No assigned tickets found</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">All work orders are currently up to date.</p>
@@ -922,14 +961,14 @@ export const DashboardPage: React.FC = () => {
             {/* Desktop Table View (>= md screens) */}
             <div className="hidden md:block famt-table-container">
               <table className="w-full text-left text-sm min-w-[640px]">
-                <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="py-3 px-5">Work Order Title</th>
-                    <th className="py-3 px-4">Asset / Site</th>
-                    <th className="py-3 px-4">Priority</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Due Date</th>
-                    <th className="py-3 px-5 text-right">Action</th>
+                    <th className="py-2.5 px-4">Work Order Title</th>
+                    <th className="py-2.5 px-3.5">Asset / Site</th>
+                    <th className="py-2.5 px-3.5">Priority</th>
+                    <th className="py-2.5 px-3.5">Status</th>
+                    <th className="py-2.5 px-3.5">Due Date</th>
+                    <th className="py-2.5 px-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -945,7 +984,7 @@ export const DashboardPage: React.FC = () => {
                         className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
                         onClick={() => navigate(`/tickets/${ticket.id}`)}
                       >
-                        <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
+                        <td className="py-2.5 sm:py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
                           <div className="truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                             {ticket.title}
                           </div>
@@ -954,7 +993,7 @@ export const DashboardPage: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4 text-xs">
+                        <td className="py-2.5 sm:py-3 px-3.5 text-xs">
                           <div className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">
                             {ticket.asset?.name || 'Unknown Asset'}
                           </div>
@@ -963,15 +1002,15 @@ export const DashboardPage: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <TicketPriorityBadge priority={ticket.priority} size="sm" />
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <TicketStatusBadge status={ticket.status} size="sm" />
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <div className="flex items-center gap-1.5 text-xs">
                             <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
                             <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
@@ -985,7 +1024,7 @@ export const DashboardPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-2.5 sm:py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           {ticket.status === 'Open' && (user?.role === 'Admin' || ticket.assigneeId === user?.id) && (
                             <Button
                               size="sm"
@@ -1046,7 +1085,7 @@ export const DashboardPage: React.FC = () => {
                 return (
                   <div
                     key={ticket.id}
-                    className="p-4 space-y-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                    className="p-3.5 space-y-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                     onClick={() => navigate(`/tickets/${ticket.id}`)}
                   >
                     <div className="flex items-start justify-between gap-2">

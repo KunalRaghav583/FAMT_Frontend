@@ -13,7 +13,7 @@ export interface Toast {
 
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (message: string, type?: ToastType, title?: string, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, title?: string, duration?: number, customId?: string) => void;
   removeToast: (id: string) => void;
   success: (message: string, title?: string) => void;
   error: (message: string, title?: string) => void;
@@ -25,22 +25,46 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const removeToast = useCallback((id: string) => {
+    const existingTimer = timeoutsRef.current.get(id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      timeoutsRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', title?: string, duration = 4000) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    (message: string, type: ToastType = 'info', title?: string, duration = 4000, customId?: string) => {
+      const id = customId || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const newToast: Toast = { id, type, title, message, duration };
 
-      setToasts((prev) => [...prev, newToast]);
+      // Clear any existing timer for this ID if replacing
+      const existingTimer = timeoutsRef.current.get(id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        timeoutsRef.current.delete(id);
+      }
+
+      setToasts((prev) => {
+        // If replacing an existing toast with customId:
+        if (customId && prev.some((t) => t.id === customId)) {
+          return prev.map((t) => (t.id === customId ? newToast : t));
+        }
+        // If an identical message and title is already active, prevent duplicate toast
+        if (!customId && prev.some((t) => t.message === message && t.title === title && t.type === type)) {
+          return prev;
+        }
+        return [...prev, newToast];
+      });
 
       if (duration > 0) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           removeToast(id);
         }, duration);
+        timeoutsRef.current.set(id, timer);
       }
     },
     [removeToast]

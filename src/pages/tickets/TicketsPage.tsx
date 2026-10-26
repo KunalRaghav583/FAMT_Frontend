@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ArrowRight,
   Wrench,
+  RefreshCw,
 } from 'lucide-react';
 import { ticketsApi, assetsApi, getErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -53,6 +54,7 @@ export const TicketsPage: React.FC = () => {
     totalPages: 1,
   });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -111,6 +113,20 @@ export const TicketsPage: React.FC = () => {
   useEffect(() => {
     fetchTickets(1);
   }, [fetchTickets]);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchTickets(pagination.page);
+      toastSuccess('Work orders and tickets refreshed', 'Refreshed');
+    } catch (err) {
+      toastError(getErrorMessage(err), 'Failed to refresh tickets');
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 350);
+    }
+  };
 
   const handleOpenCreate = useCallback(() => {
     setFormTitle('');
@@ -180,10 +196,10 @@ export const TicketsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 sm:pb-6 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 sm:pb-5 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               Maintenance Work Orders
             </h1>
             <span className="text-xs bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-full font-bold">
@@ -195,21 +211,40 @@ export const TicketsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* New Ticket Button */}
-        <Button
-          variant="primary"
-          onClick={handleOpenCreate}
-          leftIcon={<Plus className="w-4 h-4" />}
-          size="sm"
-          className="sm:text-sm shrink-0"
-        >
-          New Ticket
-        </Button>
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <Button
+            variant="secondary"
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading}
+            leftIcon={
+              <RefreshCw
+                className={`w-3.5 h-3.5 transition-transform duration-500 ${
+                  isRefreshing ? 'animate-spin text-sky-600 dark:text-sky-400' : 'group-hover:rotate-180'
+                }`}
+              />
+            }
+            size="sm"
+            className="group"
+            title="Refresh tickets list"
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={handleOpenCreate}
+            leftIcon={<Plus className="w-4 h-4" />}
+            size="sm"
+          >
+            New Ticket
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar with Chips */}
-      <div className="glass-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+      <div className="glass-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 sm:gap-3">
           {/* Search Box */}
           <div className="sm:col-span-6 relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -219,7 +254,7 @@ export const TicketsPage: React.FC = () => {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter by title, description, asset, or serial..."
               aria-label="Filter tickets by title, description, asset, or serial"
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+              className="w-full pl-9 pr-3.5 py-1.5 sm:py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg sm:rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
             />
           </div>
 
@@ -229,7 +264,7 @@ export const TicketsPage: React.FC = () => {
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as TicketStatus | '')}
               aria-label="Filter tickets by status"
-              className="w-full px-3.5 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
+              className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg sm:rounded-xl text-slate-900 dark:text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
             >
               <option value="">All Statuses</option>
               <option value="Open">Open</option>
@@ -245,7 +280,7 @@ export const TicketsPage: React.FC = () => {
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value as TicketPriority | '')}
               aria-label="Filter tickets by priority"
-              className="w-full px-3.5 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
+              className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg sm:rounded-xl text-slate-900 dark:text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
             >
               <option value="">All Priorities</option>
               <option value="Low">Low</option>
@@ -257,14 +292,14 @@ export const TicketsPage: React.FC = () => {
         </div>
 
         {/* Status Chips and "My Assigned" Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-slate-500 dark:text-slate-400 font-semibold mr-1">Status:</span>
+            <span className="text-slate-500 dark:text-slate-400 font-semibold mr-1 text-[11px] sm:text-xs">Status:</span>
             {(['', 'Open', 'In_progress', 'Resolved', 'Closed'] as (TicketStatus | '')[]).map((st) => (
               <button
                 key={st || 'all'}
                 onClick={() => setSelectedStatus(st)}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer text-[11px] sm:text-xs ${
                   selectedStatus === st
                     ? 'bg-sky-500 text-slate-950 shadow-xs font-bold'
                     : 'bg-slate-100 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
@@ -276,12 +311,12 @@ export const TicketsPage: React.FC = () => {
           </div>
 
           {/* Only My Tickets Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 font-semibold">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 font-semibold text-[11px] sm:text-xs">
             <input
               type="checkbox"
               checked={onlyMyTickets}
               onChange={(e) => setOnlyMyTickets(e.target.checked)}
-              className="rounded bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-sky-500 focus:ring-sky-400 w-4 h-4 cursor-pointer"
+              className="rounded bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-sky-500 focus:ring-sky-400 w-3.5 h-3.5 cursor-pointer"
             />
             <span>Only My Assigned Tickets</span>
           </label>
@@ -291,7 +326,7 @@ export const TicketsPage: React.FC = () => {
       {/* Tickets List / Table */}
       <div className="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
         {loading ? (
-          <div className="p-12">
+          <div className="p-10 sm:p-12">
             <LoadingSpinner message="Retrieving work orders..." />
           </div>
         ) : filteredTickets.length === 0 ? (
@@ -307,15 +342,15 @@ export const TicketsPage: React.FC = () => {
             {/* Desktop Table View (>= md screens) */}
             <div className="hidden md:block famt-table-container">
               <table className="w-full text-left text-sm min-w-[680px]">
-                <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-5">Work Order Title</th>
-                    <th className="py-3.5 px-4">Equipment / Site</th>
-                    <th className="py-3.5 px-4">Priority</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4">Assignee</th>
-                    <th className="py-3.5 px-4">Due Date</th>
-                    <th className="py-3.5 px-5 text-right">Action</th>
+                    <th className="py-2.5 px-4">Work Order Title</th>
+                    <th className="py-2.5 px-3.5">Equipment / Site</th>
+                    <th className="py-2.5 px-3.5">Priority</th>
+                    <th className="py-2.5 px-3.5">Status</th>
+                    <th className="py-2.5 px-3.5">Assignee</th>
+                    <th className="py-2.5 px-3.5">Due Date</th>
+                    <th className="py-2.5 px-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -344,7 +379,7 @@ export const TicketsPage: React.FC = () => {
                           }
                         }}
                       >
-                        <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
+                        <td className="py-2.5 sm:py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 max-w-xs">
                           <div className="group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors font-bold truncate">
                             {ticket.title}
                           </div>
@@ -353,7 +388,7 @@ export const TicketsPage: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4 text-xs">
+                        <td className="py-2.5 sm:py-3 px-3.5 text-xs">
                           <div className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[170px] flex items-center gap-1.5">
                             <Wrench className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="truncate">{ticket.asset?.name || 'Unknown Asset'}</span>
@@ -363,15 +398,15 @@ export const TicketsPage: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <TicketPriorityBadge priority={ticket.priority} size="sm" />
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <TicketStatusBadge status={ticket.status} size="sm" />
                         </td>
 
-                        <td className="py-3.5 px-4 text-xs">
+                        <td className="py-2.5 sm:py-3 px-3.5 text-xs">
                           {ticket.assignee ? (
                             <div className="flex items-center gap-1.5">
                               <UserIcon className="w-3.5 h-3.5 text-slate-400" />
@@ -384,7 +419,7 @@ export const TicketsPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-2.5 sm:py-3 px-3.5">
                           <div className="flex items-center gap-1.5 text-xs">
                             <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
                             <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
@@ -398,7 +433,7 @@ export const TicketsPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-2.5 sm:py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           {canAccessDetail ? (
                             <Button
                               size="sm"
@@ -432,7 +467,7 @@ export const TicketsPage: React.FC = () => {
                 return (
                   <div
                     key={ticket.id}
-                    className={`p-4 space-y-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
+                    className={`p-3.5 space-y-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
                       canAccessDetail ? 'cursor-pointer' : 'cursor-default'
                     }`}
                     onClick={() => {
@@ -461,7 +496,7 @@ export const TicketsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-0.5">
                       <div className="flex items-center gap-1.5 truncate max-w-[170px]">
                         <Wrench className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
@@ -507,7 +542,7 @@ export const TicketsPage: React.FC = () => {
 
         {/* Pagination Bar */}
         {pagination.totalPages > 1 && (
-          <div className="p-3.5 sm:p-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="p-3 sm:p-3.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <div>
               Page <span className="text-slate-900 dark:text-slate-100 font-bold">{pagination.page}</span> of{' '}
               <span className="text-slate-900 dark:text-slate-100 font-bold">{pagination.totalPages}</span> ({pagination.total} total tickets)
@@ -519,7 +554,7 @@ export const TicketsPage: React.FC = () => {
                 variant="secondary"
                 disabled={pagination.page <= 1}
                 onClick={() => fetchTickets(pagination.page - 1)}
-                leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+                leftIcon={<ChevronLeft className="w-4 h-4" />}
               >
                 Previous
               </Button>
@@ -528,7 +563,7 @@ export const TicketsPage: React.FC = () => {
                 variant="secondary"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => fetchTickets(pagination.page + 1)}
-                rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+                rightIcon={<ChevronRight className="w-4 h-4" />}
               >
                 Next
               </Button>
@@ -544,11 +579,11 @@ export const TicketsPage: React.FC = () => {
         title="Raise Maintenance Ticket"
         description="Log an operational issue or scheduled inspection against field machinery."
       >
-        <form onSubmit={handleCreateSubmit} className="space-y-4">
+        <form onSubmit={handleCreateSubmit} className="space-y-3.5">
           <div>
             <label
               htmlFor="ticket-create-title"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
             >
               Ticket Title
             </label>
@@ -559,14 +594,14 @@ export const TicketsPage: React.FC = () => {
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="e.g. Excessive vibration and heat signature on turbine rotor"
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
             />
           </div>
 
           <div>
             <label
               htmlFor="ticket-create-desc"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
             >
               Detailed Description
             </label>
@@ -577,7 +612,7 @@ export const TicketsPage: React.FC = () => {
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Provide exact symptoms, operational parameters, or safety hazards..."
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
             />
           </div>
 
@@ -585,7 +620,7 @@ export const TicketsPage: React.FC = () => {
             <div>
               <label
                 htmlFor="ticket-create-priority"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
               >
                 Priority Tier
               </label>
@@ -593,7 +628,7 @@ export const TicketsPage: React.FC = () => {
                 id="ticket-create-priority"
                 value={formPriority}
                 onChange={(e) => setFormPriority(e.target.value as TicketPriority)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -605,7 +640,7 @@ export const TicketsPage: React.FC = () => {
             <div>
               <label
                 htmlFor="ticket-create-duedate"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
               >
                 Due Date & Time
               </label>
@@ -615,7 +650,7 @@ export const TicketsPage: React.FC = () => {
                 required
                 value={formDueDate}
                 onChange={(e) => setFormDueDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
               />
             </div>
           </div>
@@ -623,7 +658,7 @@ export const TicketsPage: React.FC = () => {
           <div>
             <label
               htmlFor="ticket-create-asset"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
             >
               Equipment Asset
             </label>
@@ -632,7 +667,7 @@ export const TicketsPage: React.FC = () => {
               required
               value={formAssetId}
               onChange={(e) => setFormAssetId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
             >
               <option value="">Select an asset...</option>
               {assets.map((a) => (
@@ -647,7 +682,7 @@ export const TicketsPage: React.FC = () => {
             <div>
               <label
                 htmlFor="ticket-create-assignee"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
               >
                 Assigned Technician
               </label>
@@ -655,7 +690,7 @@ export const TicketsPage: React.FC = () => {
                 id="ticket-create-assignee"
                 value={formAssigneeId}
                 onChange={(e) => setFormAssigneeId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all cursor-pointer"
               >
                 <option value={SEEDED_TECH.id}>Field Service Technician (tech@famt.dev)</option>
                 <option value="">Leave unassigned (Open pool)</option>
@@ -663,7 +698,7 @@ export const TicketsPage: React.FC = () => {
             </div>
           )}
 
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"

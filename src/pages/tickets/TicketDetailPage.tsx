@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -15,6 +16,7 @@ import {
   Send,
   Edit3,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { ticketsApi, commentsApi, getErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -46,6 +48,7 @@ export const TicketDetailPage: React.FC = () => {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
 
@@ -102,6 +105,20 @@ export const TicketDetailPage: React.FC = () => {
   useEffect(() => {
     fetchTicketDetails();
   }, [fetchTicketDetails]);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchTicketDetails();
+      toastSuccess('Ticket details & conversation updated', 'Refreshed');
+    } catch (err) {
+      toastError(getErrorMessage(err), 'Failed to refresh ticket');
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 350);
+    }
+  };
 
   // Handle Workflow State Machine Transition
   const handleTransitionStatus = async (nextStatus: TicketStatus) => {
@@ -227,45 +244,64 @@ export const TicketDetailPage: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Top Breadcrumb & Action bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 sm:pb-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 sm:pb-5 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2.5 min-w-0">
           <button
             onClick={() => navigate('/tickets')}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 shadow-xs"
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 shadow-xs"
             title="Back to Tickets"
             aria-label="Back to Tickets"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="font-mono text-xs text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800/60 font-bold">
                 TKT-{ticket.id.slice(0, 8)}
               </span>
               <TicketStatusBadge status={ticket.status} size="sm" />
               <TicketPriorityBadge priority={ticket.priority} size="sm" />
             </div>
-            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 line-clamp-2 sm:truncate break-words">
+            <h1 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 line-clamp-2 sm:truncate break-words">
               {ticket.title}
             </h1>
           </div>
         </div>
 
-        {canModifyTicket && (
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <Button
             variant="secondary"
-            onClick={handleOpenEdit}
-            leftIcon={<Edit3 className="w-4 h-4" />}
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading}
+            leftIcon={
+              <RefreshCw
+                className={`w-3.5 h-3.5 transition-transform duration-500 ${
+                  isRefreshing ? 'animate-spin text-sky-600 dark:text-sky-400' : 'group-hover:rotate-180'
+                }`}
+              />
+            }
             size="sm"
-            className="shrink-0"
+            className="group"
+            title="Refresh ticket details & comments"
           >
-            Edit Ticket
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
-        )}
+
+          {canModifyTicket && (
+            <Button
+              variant="secondary"
+              onClick={handleOpenEdit}
+              leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+              size="sm"
+            >
+              Edit Ticket
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Prominent Workflow State Machine Visualizer */}
-      <div className="glass-card p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 sm:space-y-6 shadow-xs">
+      <div className="glass-card p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -283,7 +319,7 @@ export const TicketDetailPage: React.FC = () => {
         </div>
 
         {/* 4-Step Interactive Pipeline Progress Bar (Responsive 2x2 on mobile, 4 on desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 relative">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 relative">
           {WORKFLOW_STEPS.map((step, idx) => {
             const isCompleted = idx < currentStepIndex;
             const isCurrent = idx === currentStepIndex;
@@ -291,7 +327,7 @@ export const TicketDetailPage: React.FC = () => {
             return (
               <div
                 key={step.status}
-                className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-center transition-all ${
+                className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl border text-center transition-all ${
                   isCurrent
                     ? 'bg-sky-50 dark:bg-sky-500/15 border-sky-400 text-sky-800 dark:text-sky-300 ring-2 ring-sky-500/20 shadow-xs'
                     : isCompleted
@@ -299,13 +335,13 @@ export const TicketDetailPage: React.FC = () => {
                     : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/80 text-slate-500 dark:text-slate-500 opacity-70'
                 }`}
               >
-                <div className="flex items-center justify-center mb-1.5">
+                <div className="flex items-center justify-center mb-1">
                   {isCompleted ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   ) : isCurrent ? (
-                    <Clock className="w-5 h-5 text-sky-600 dark:text-sky-400 animate-pulse" />
+                    <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400 animate-pulse" />
                   ) : (
-                    <span className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                    <span className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                       {idx + 1}
                     </span>
                   )}
@@ -323,7 +359,7 @@ export const TicketDetailPage: React.FC = () => {
         </div>
 
         {/* Contextual Action Buttons based on current state */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {canModifyTicket ? (
               <span>Authorized as <strong className="text-slate-800 dark:text-slate-200">{isAdmin ? 'Admin' : 'Assigned Technician'}</strong></span>
@@ -332,13 +368,13 @@ export const TicketDetailPage: React.FC = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {ticket.status === 'Open' && canModifyTicket && (
               <Button
                 variant="primary"
                 isLoading={transitioning}
                 onClick={() => handleTransitionStatus('In_progress')}
-                leftIcon={<Wrench className="w-4 h-4" />}
+                leftIcon={<Wrench className="w-3.5 h-3.5" />}
                 size="sm"
               >
                 Start Work (In progress)
@@ -350,7 +386,7 @@ export const TicketDetailPage: React.FC = () => {
                 variant="success"
                 isLoading={transitioning}
                 onClick={() => handleTransitionStatus('Resolved')}
-                leftIcon={<Check className="w-4 h-4" />}
+                leftIcon={<Check className="w-3.5 h-3.5" />}
                 size="sm"
               >
                 Mark Resolved
@@ -362,7 +398,7 @@ export const TicketDetailPage: React.FC = () => {
                 variant="outline"
                 isLoading={transitioning}
                 onClick={() => handleTransitionStatus('Closed')}
-                leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
                 size="sm"
               >
                 Close Ticket
@@ -374,7 +410,7 @@ export const TicketDetailPage: React.FC = () => {
                 variant="secondary"
                 isLoading={transitioning}
                 onClick={() => handleTransitionStatus('Open')}
-                leftIcon={<RotateCcw className="w-4 h-4 text-amber-500" />}
+                leftIcon={<RotateCcw className="w-3.5 h-3.5 text-amber-500" />}
                 size="sm"
               >
                 Reopen Ticket (Admin)
@@ -391,23 +427,23 @@ export const TicketDetailPage: React.FC = () => {
       </div>
 
       {/* Ticket Details & Comments Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* Left Column: Metadata & Asset Card (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-4 sm:space-y-5">
           {/* Work Description Card */}
-          <div className="glass-card p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
+          <div className="glass-card p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 shadow-xs">
             <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Work Order Description
             </h3>
-            <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-950/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800/80">
+            <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80">
               {ticket.description}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block font-semibold">Due SLA Date</span>
-                <div className="flex items-center gap-1.5 mt-1 font-bold">
-                  <Calendar className={`w-4 h-4 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
+                <span className="text-slate-500 dark:text-slate-400 block font-semibold text-[11px]">Due SLA Date</span>
+                <div className="flex items-center gap-1.5 mt-0.5 font-bold">
+                  <Calendar className={`w-3.5 h-3.5 ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
                   <span className={isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}>
                     {new Date(ticket.dueDate).toLocaleString()}
                   </span>
@@ -420,9 +456,9 @@ export const TicketDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block font-semibold">Created By</span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <UserIcon className="w-4 h-4 text-slate-400" />
+                <span className="text-slate-500 dark:text-slate-400 block font-semibold text-[11px]">Created By</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <UserIcon className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-slate-800 dark:text-slate-200 font-bold truncate">
                     {ticket.creator?.name || 'Operations'}
                   </span>
@@ -433,9 +469,9 @@ export const TicketDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block font-semibold">Assigned Technician</span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Wrench className="w-4 h-4 text-amber-500" />
+                <span className="text-slate-500 dark:text-slate-400 block font-semibold text-[11px]">Assigned Technician</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Wrench className="w-3.5 h-3.5 text-amber-500" />
                   <span className="text-slate-800 dark:text-slate-200 font-bold truncate">
                     {ticket.assignee?.name || 'Unassigned'}
                   </span>
@@ -448,10 +484,10 @@ export const TicketDetailPage: React.FC = () => {
           </div>
 
           {/* Associated Equipment Asset Card */}
-          <div className="glass-card p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
+          <div className="glass-card p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <Cpu className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                   Equipment Specifications
                 </h3>
@@ -459,12 +495,12 @@ export const TicketDetailPage: React.FC = () => {
               {ticket.asset?.status && <AssetStatusBadge status={ticket.asset.status} size="sm" />}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
               <div>
                 <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold block text-[11px]">
                   Asset Name
                 </span>
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-200 mt-0.5 block">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-200 mt-0.5 block">
                   {ticket.asset?.name || 'Unknown'}
                 </span>
               </div>
@@ -473,7 +509,7 @@ export const TicketDetailPage: React.FC = () => {
                 <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold block text-[11px]">
                   Serial Identifier
                 </span>
-                <span className="font-mono text-xs bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 px-2 py-1 rounded inline-block mt-0.5 border border-slate-200 dark:border-slate-800 font-bold">
+                <span className="font-mono text-xs bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded inline-block mt-0.5 border border-slate-200 dark:border-slate-800 font-bold">
                   {ticket.asset?.serialNo || 'N/A'}
                 </span>
               </div>
@@ -482,7 +518,7 @@ export const TicketDetailPage: React.FC = () => {
                 <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold block text-[11px]">
                   Plant Site
                 </span>
-                <div className="flex items-center gap-1.5 mt-1">
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <Building2 className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-slate-800 dark:text-slate-200 font-bold">
                     {ticket.asset?.site?.name || 'Unassigned Site'}
@@ -494,7 +530,7 @@ export const TicketDetailPage: React.FC = () => {
                 <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold block text-[11px]">
                   Facility Location
                 </span>
-                <span className="text-slate-700 dark:text-slate-300 font-medium mt-1 block">
+                <span className="text-slate-700 dark:text-slate-300 font-medium mt-0.5 block">
                   {ticket.asset?.site?.location || 'Unknown'}
                 </span>
               </div>
@@ -504,10 +540,10 @@ export const TicketDetailPage: React.FC = () => {
 
         {/* Right Column: Live Comments Feed (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="glass-card p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col h-full min-h-[460px] shadow-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="glass-card p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col h-full min-h-[420px] shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <MessageSquare className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                   Maintenance Log & Comments
                 </h3>
@@ -518,12 +554,12 @@ export const TicketDetailPage: React.FC = () => {
             </div>
 
             {/* Comments List Feed */}
-            <div className="flex-1 py-4 space-y-3 overflow-y-auto max-h-[380px] pr-1">
+            <div className="flex-1 py-3 space-y-2.5 overflow-y-auto max-h-[360px] pr-1">
               {comments.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 dark:text-slate-400 text-xs">
-                  <MessageSquare className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs">
+                  <MessageSquare className="w-7 h-7 text-slate-400 mx-auto mb-2" />
                   <p className="font-semibold text-slate-700 dark:text-slate-300">No comments posted yet</p>
-                  <p className="text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-slate-500 dark:text-slate-400 mt-0.5">
                     Record inspection results, part serials, or operational observations.
                   </p>
                 </div>
@@ -535,10 +571,10 @@ export const TicketDetailPage: React.FC = () => {
                   return (
                     <div
                       key={comment.id}
-                      className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 space-y-1.5 text-xs"
+                      className="p-3 rounded-lg sm:rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 space-y-1 text-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className="font-bold text-slate-900 dark:text-slate-200">{author?.name || 'Operator'}</span>
                           {author?.role && <RoleBadge role={author.role} size="sm" />}
                         </div>
@@ -560,7 +596,7 @@ export const TicketDetailPage: React.FC = () => {
             </div>
 
             {/* Post Comment Input */}
-            <form onSubmit={handleAddComment} className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-auto">
+            <form onSubmit={handleAddComment} className="pt-2.5 border-t border-slate-100 dark:border-slate-800 mt-auto">
               <div className="relative">
                 <textarea
                   id="ticket-comment-body"
@@ -570,12 +606,12 @@ export const TicketDetailPage: React.FC = () => {
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Record an inspection update or comment..."
                   aria-label="Record an inspection update or comment"
-                  className="w-full p-3 pr-12 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all resize-none"
+                  className="w-full p-2.5 pr-11 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all resize-none"
                 />
                 <button
                   type="submit"
                   disabled={submittingComment || !newComment.trim()}
-                  className="absolute right-2.5 bottom-3 p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm shadow-sky-500/20"
+                  className="absolute right-2 bottom-2.5 p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
                   aria-label="Send comment"
                 >
                   <Send className="w-3.5 h-3.5" />
@@ -593,11 +629,11 @@ export const TicketDetailPage: React.FC = () => {
         title="Edit Work Order"
         description="Update ticket scope, severity priority, or due completion date."
       >
-        <form onSubmit={handleEditSubmit} className="space-y-4">
+        <form onSubmit={handleEditSubmit} className="space-y-3.5">
           <div>
             <label
               htmlFor="edit-ticket-title"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
             >
               Title
             </label>
@@ -607,14 +643,14 @@ export const TicketDetailPage: React.FC = () => {
               required
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
 
           <div>
             <label
               htmlFor="edit-ticket-description"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
             >
               Description
             </label>
@@ -624,7 +660,7 @@ export const TicketDetailPage: React.FC = () => {
               rows={3}
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
 
@@ -632,7 +668,7 @@ export const TicketDetailPage: React.FC = () => {
             <div>
               <label
                 htmlFor="edit-ticket-priority"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
               >
                 Priority Tier
               </label>
@@ -640,7 +676,7 @@ export const TicketDetailPage: React.FC = () => {
                 id="edit-ticket-priority"
                 value={editPriority}
                 onChange={(e) => setEditPriority(e.target.value as TicketPriority)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -652,7 +688,7 @@ export const TicketDetailPage: React.FC = () => {
             <div>
               <label
                 htmlFor="edit-ticket-duedate"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
               >
                 Due Date & Time
               </label>
@@ -661,12 +697,12 @@ export const TicketDetailPage: React.FC = () => {
                 type="datetime-local"
                 value={editDueDate}
                 onChange={(e) => setEditDueDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
